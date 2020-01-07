@@ -52,6 +52,8 @@ match /databases/{database}/documents
 
 
 
+
+
 #### 1) 규칙을 적용할 문서를 지정한다.
 
 
@@ -77,6 +79,10 @@ match /cities/ Seoul {
 ```firestore
 match /cities/{document=**}
 ```
+
+
+
+'+ { } 내의 이름은 컬렉션 이름과 다르게 임의로 설정하면 된다. 
 
 
 
@@ -199,6 +205,8 @@ allow read : if request.auth.token.email != null && request.auth.token.email_ver
 
 
 
+
+
 - **사용자 인증 클레임 생성**
 
 서버 측 라이브러리 또는 cloud function을 사용하여 특정 사용자에 대해 설정하는 사용자 지정 변수임
@@ -304,11 +312,8 @@ allow read: if resource.data.name == 'John Doe'
   - get  : 지정 문서 외에 다른 문서를 가져와서 비교 
   - exist  : 다른 문서에 데이터 존재 여부를 알기 위함  
 
-  
 
 ```firestore
-if get(/databases/$(database)/documents/restaurants/$(restaurantID)/private_data/private).data.roles[request.auth.uid] == ["editor" ,"owner"]
-
 if exists(/databases/$(database)/documents/users/$(request.auth.uid))
 
 if get(/databases/$(database)/documents/users/$(request.auth.uid)).data.admin == true
@@ -319,6 +324,27 @@ if get(/databases/$(database)/documents/users/$(request.auth.uid)).data.admin ==
 > *match /databases/**{database}**/documents*
 
 ​		
+
+'+ map 형태의 필드값을 가져올 때
+
+```firestore
+// (roles / request.auth.uid / role / isadmin : true) 일때 승인
+
+match /posts/{docId} {    
+    allow read, write: if hasRole("isAdmin")  
+}      
+function hasRole(userRole) {    
+  return get(/databases/$(database)/documents/roles/$(request.auth.uid)).data.role[userRole] 
+}
+```
+
+```firestore
+//(restaurants/restaurantID/ private_data (sub collection) / private / roles / request.auth.uid == editor or owner ) 일 때 승인
+
+if get(/databases/$(database)/documents/restaurants/$(restaurantID)/private_data/private).data.roles[request.auth.uid] == ["editor" ,"owner"]
+```
+
+
 
 - **쿼리한 내용에 대한 데이터를 가져올 경우 ( request.query )**
   - limit - query limit clause.
@@ -346,9 +372,10 @@ allow read: if request.time.toMillis() >=
 ```
 
 ```firestore
-//데이터 베이스에 저장된 publication timestamp 와 요청된 시간 비교 (1000 Milliseconds =
-1 Second)
- allow read: if request.time.toMillis() >=
+//데이터 베이스에 저장된 publication timestamp 와 요청된 시간 비교 
+// 1 millisecond = 0.001 seconds.
+
+allow read: if request.time.toMillis() >=
             resource.data.publicAt.seconds * 1000;
 ```
 
@@ -359,15 +386,16 @@ allow read: if request.time.toMillis() >=
   - duration.time(hours, mins, secs, nanos) 
 
   ```firestore
-   allow read: if request.time > (resource.data.lastSendNotification + duration.time(1, 0, 0, 0));
-   
    //마지막으로 전송된 알람시간 이후 1시간이 지난 문서만 read할 수 있다.
-  ```
-
+   
+  allow read: if request.time > (resource.data.lastSendNotification + duration.time(1, 0, 0, 0));
+  
+```
   
 
-  - duration.value(간격, 단위)  
-
+  
+- duration.value(간격, 단위)  
+  
   | Unit | Description  |
   | :--- | :----------- |
   | w    | Weeks        |
@@ -413,19 +441,21 @@ https://firebase.google.com/docs/reference/rules/rules.duration_
      	 function outerauthorOrPublished(storyid) {
             return resource.data.published == true || request.auth.uid == 	resource.data.author;
           }
-    
-    
-     	match /stories/{storyid} {
-    
+
+
+​    
+​     	match /stories/{storyid} {
+​    
      //지정문서범위 내에 있는 함수
           function innerauthorOrPublished() {
             return resource.data.published == true || request.auth.uid == 	resource.data.author;
           }
-    
-         
-          allow list: if request.query.limit <= 10 &&
-                         innerauthorOrPublished();
-    
+
+
+​         
+​          allow list: if request.query.limit <= 10 &&
+​                         innerauthorOrPublished();
+​    
           allow get: if outerauthorOrPublished(storyid); 
           allow write: if request.auth.uid == resource.data.author;
         }
@@ -463,7 +493,11 @@ Firestore.instance.collection("stories").getDocuments()
 
 
 
- 
+'+  이메일 인증서비스를 사용하지 않을 때 이메일 관련 조건을 추가하면 오류가 생긴다.
+
+'+  휴대폰 인증서비스에 대한 보안규칙 사용 시 Authentication에 저장된 형태인  phone_number == '+821045241423' 만 허용가능하다.  01045241423 형태는 사용하지 못한다.
+
+
 
 
 
