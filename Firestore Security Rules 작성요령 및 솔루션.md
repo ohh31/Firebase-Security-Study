@@ -4,6 +4,24 @@
 
 
 
+> **Firestore 보안규칙의 이점**
+>
+> 보안규칙 구현이 간단하며 보안규칙을 위해 인프라를 관리하거나 복잡한 서버측 인증 및 인증 코드를 작성할 필요 없다.
+>
+> 
+>
+> **Firestore 보안규칙의 필요성**
+>
+>  Firebase는 디폴트로 사용자데이터에 대한 보안을 제공하지 않는다. 따라서 보안규칙을 통해 인증되지 않은 사용자의 데이터베이스 접근을 막아 데이터가 노출되거나 손상되는 것을 막는다.
+>
+> <u>관련기사</u>
+>
+> https://www.hauri.co.kr/security/boannews_view.html?intSeq=12099&page=1&article_num=12044
+
+
+
+
+
 ### 1. 보안규칙 버전 
 
 ```firestore
@@ -54,11 +72,12 @@ match /databases/{database}/documents
 
 
 
+
 #### 1) 규칙을 적용할 문서를 지정한다.
 
 
 
-- cities collection 내의 모든 문서에 대해 보안규칙 적용 (하위 컬렉션은 적용되지 않음)
+- cities collection 내의 모든 문서에 대해 보안규칙 적용 (하위 컬렉션은 적용되지 않는다.)
 
 ```firestore
 match /cities/{city} {
@@ -82,7 +101,7 @@ match /cities/{document=**}
 
 
 
-'+ { } 내의 이름은 컬렉션 이름과 다르게 임의로 설정하면 된다. 
+-{ } 내의 이름은 컬렉션 이름과 다르게 임의로 설정하면 된다. 
 
 
 
@@ -168,7 +187,7 @@ allow read, write: if true
 allow read, write: if request.auth.uid == request.resource.data.author_uid
 ```
 
- request.auth.uid와 firestore에 추가되고자 하는 문서의 author_uid 필드의 값이 같을 때 읽고 쓰기 허용
+ request.auth.uid와 firestore에 추가되고자 하는 문서의 author_uid 필드의 값이 같을 때 읽고 쓰기를 허용
 
 
 
@@ -182,20 +201,22 @@ allow read, write: if false
 
 - **그 외 request.auth 활용** 
 
-Firebase Auth를 사용하여 인증되었다고 가정하는 사용자 정보가 들어 있음
+<u>Firebase Auth를 사용하여 인증되었다고 가정하는 사용자 정보</u>가 들어 있다.
 
 ```firestore
 request.auth.uid  
 
 request.auth.token.email
-request.auth.token.email_verified // 해당 전자메일 주소가 확인 되었는가 
+request.auth.token.email_verified // 해당 전자메일 주소가 확인 되었는지 확인한다. 
 request.auth.token.email.matches('.*google[.]com$') 
-// Google.com을 사용한 사람들만 읽도록 하게 하고 싶다 .matches('.*@domain[.]com')
+// Google.com을 사용한 사람들만 읽도록 하게 하고 싶다. .matches('.*@domain[.]com')
 
 request.auth.token.phone_number
 request.auth.token.firebase.sign_in_provider == "phone"
 //(custom, password, phone, anonymous, google.com, facebook.com, github.com, twitter.com)
 ```
+
+이메일 인증 예시)
 
 ```firestore
 allow read : if request.auth.token.email != null && request.auth.token.email_verified 
@@ -209,7 +230,7 @@ allow read : if request.auth.token.email != null && request.auth.token.email_ver
 
 - **사용자 인증 클레임 생성**
 
-서버 측 라이브러리 또는 cloud function을 사용하여 특정 사용자에 대해 설정하는 사용자 지정 변수임
+서버 측 라이브러리 또는 cloud function을 사용하여 특정 사용자에 대해 설정하는 사용자 지정 변수이다.
 
 ```firestore
 match / {everythingInMyDatabase == **}{
@@ -325,7 +346,7 @@ if get(/databases/$(database)/documents/users/$(request.auth.uid)).data.admin ==
 
 ​		
 
-'+ map 형태의 필드값을 가져올 때
+-map 형태의 필드값을 가져올 때
 
 ```firestore
 // (roles / request.auth.uid / role / isadmin : true) 일때 승인
@@ -390,23 +411,20 @@ allow read: if request.time.toMillis() >=
    
   allow read: if request.time > (resource.data.lastSendNotification + duration.time(1, 0, 0, 0));
   
+  ```
+  
+  - duration.value(간격, 단위)  
+    
+    | Unit | Description  |
+    | :--- | :----------- |
+    | w    | Weeks        |
+    | d    | Days         |
+    | h    | Hours        |
+    | m    | Minutes      |
+    | s    | Seconds      |
+    | ms   | Milliseconds |
+    | ns   | Nanoseconds  |
 ```
-  
-
-  
-- duration.value(간격, 단위)  
-  
-  | Unit | Description  |
-  | :--- | :----------- |
-  | w    | Weeks        |
-  | d    | Days         |
-  | h    | Hours        |
-  | m    | Minutes      |
-  | s    | Seconds      |
-  | ms   | Milliseconds |
-  | ns   | Nanoseconds  |
-
-```firestore
 match /notification/{notificationId} {
    allow create: if 
       request.time.toMillis() > getRequiredTimeInMillis();
@@ -433,40 +451,42 @@ https://firebase.google.com/docs/reference/rules/rules.duration_
 
 반복적으로 사용하는 규칙의 경우 함수로 만들어놓으면 편리하다 
 
-    service cloud.firestore {
+```
+service cloud.firestore {
+
+  match /databases/{database}/documents {
+ 
+ //지정문서범위 바깥 쪽에 있는 함수
+ 	 function outerauthorOrPublished(storyid) {
+        return resource.data.published == true || request.auth.uid == 	resource.data.author;
+      }
+     match /stories/{storyid} {
     
-      match /databases/{database}/documents {
-     
-     //지정문서범위 바깥 쪽에 있는 함수
-     	 function outerauthorOrPublished(storyid) {
-            return resource.data.published == true || request.auth.uid == 	resource.data.author;
-          }
-
-
-​    
-​     	match /stories/{storyid} {
-​    
      //지정문서범위 내에 있는 함수
-          function innerauthorOrPublished() {
-            return resource.data.published == true || request.auth.uid == 	resource.data.author;
-          }
+         function innerauthorOrPublished() {
+           return resource.data.published == true || request.auth.uid == 	esource.data.author;
+         }
 
-
-​         
-​          allow list: if request.query.limit <= 10 &&
-​                         innerauthorOrPublished();
-​    
-          allow get: if outerauthorOrPublished(storyid); 
-          allow write: if request.auth.uid == resource.data.author;
+        
+         allow list: if request.query.limit <= 10 &&
+                         innerauthorOrPublished();
+    
+         allow get: if outerauthorOrPublished(storyid); 
+         allow write: if request.auth.uid == resource.data.author;
         }
       }
     } 
+```
+
+```firestore
+
+```
 
 
 
-* ##### 반드시 주의해야할 점
+- **반드시 주의해야할 점**
 
-**보안규칙은 필터가 아니다. **실제 데이터에 접근하는 것이 아니라 코드를 통해 가정된 데이터에 보안규칙을 적용하기 때문에 쿼리한 문서에 대해 보안규칙을 적용할 경우 코드 상에서의 쿼리 내용과 보안규칙에서의 쿼리 내용이 동일해야한다. 코드가 아닌 보안규칙에만 쿼리를 적용하면 조건에 맞지 않는 데이터가 들어올 수 있기 때문에 보안규칙이 해당 데이터를 거부할 수 있다. 
+-**보안규칙은 필터가 아니다. **실제 데이터에 접근하는 것이 아니라 코드를 통해 가정된 데이터에 보안규칙을 적용하기 때문에 쿼리한 문서에 대해 보안규칙을 적용할 경우 코드 상에서의 쿼리 내용과 보안규칙에서의 쿼리 내용이 동일해야한다. 코드가 아닌 보안규칙에만 쿼리를 적용하면 조건에 맞지 않는 데이터가 들어올 수 있기 때문에 보안규칙이 해당 데이터를 거부할 수 있다. 
 
 ```dart
 allow read, write: if request.auth.uid == resource.data.author;
@@ -493,9 +513,9 @@ Firestore.instance.collection("stories").getDocuments()
 
 
 
-'+  이메일 인증서비스를 사용하지 않을 때 이메일 관련 조건을 추가하면 오류가 생긴다.
+-이메일 인증서비스를 사용하지 않을 때 이메일 관련 조건을 추가하면 오류가 생긴다.
 
-'+  휴대폰 인증서비스에 대한 보안규칙 사용 시 Authentication에 저장된 형태인  phone_number == '+821045241423' 만 허용가능하다.  01045241423 형태는 사용하지 못한다.
+-휴대폰 인증서비스에 대한 보안규칙 사용 시 Authentication에 저장된 형태인  phone_number == '821045241423' 형태만 허용가능하다.  '01045241423' 형태는 같지 않다고 인식하니 유의하자.
 
 
 
