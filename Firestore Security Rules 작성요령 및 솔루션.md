@@ -262,7 +262,11 @@ allow read, write : if request.auth.token.role == "moderator";
 
 - **사용자가 작성한 문서를 데이터베이스에 쓸 경우 (request.resource.data) **
 
-request.resource.data :  사용자가 write하기를 시도했던 document의 모든 필드를 표현한다. 
+
+
+> **request.resource.data란?**
+>
+> 사용자가 write하기를 시도하는 document의 모든 필드를 표현한다.
 
 ```firestore
 //작성하고자 하는 문서의 score 필드값이 50일 때 쓰기 허용
@@ -300,7 +304,13 @@ allow write : if request.resource.data.reviewID == request.auth.uid;
 
 -  **이미 데이터베이스에 존재하는 문서를 읽거나 쓸 경우(resource.data) **
 
-resource.data :  이미  데이터베이스에 있는 문서를 나타내는 것 
+
+
+> **resource.data란? **
+>
+> 이미  데이터베이스에 있는 문서를 나타내는 것 
+
+
 
 ```firestore
 //지정한 문서의 reviewerID 필드와 request.auth.uid이 같을 때만 문서를 수정할 수 있도록 한다.
@@ -330,25 +340,61 @@ allow read: if resource.data.name == 'John Doe'
 
 - **다른 문서에 대한 엑세스 (지정한 문서 외에 다른 문서를 사용해야할 경우) **
 
-  - get  : 지정 문서 외에 다른 문서를 가져와서 비교 
-  - exist  : 다른 문서에 데이터 존재 여부를 알기 위함  
+  
+  
+  - exist  : 다른 문서에 데이터 존재 여부를 알기 위함
+  - get  : 지정 문서 외에 다른 문서를 가져와서 비교   
+
+
+
+*exist는 다른 문서에 특정 문서가 존재하는지를 판별한다. 
+
+특성 필드 값이 존재하는지를 확인하기 위해서는 get을 사용한다.
+
+
+
+<u>exist 예시</u>  
 
 
 ```firestore
-if exists(/databases/$(database)/documents/users/$(request.auth.uid))
+//users collection내에 특정 uid의 문서가 존재하는가  
 
+if exists(/databases/$(database)/documents/users/$(request.auth.uid))
+if exists(/databases/$(database)/documents/Users/$('2s6xdCuygpMv0ralWTnxbRZcYo73'));
+
+//users subcollection내에 request.auth.uid인 문서가 존재하는가  
+
+if exists(/databases/$(database)/documents/leagues/$(league)/users/$(request.auth.uid))} 
+```
+
+    //Users 컬렉션 내 특정문서의 'name' 필드를 write하려고 한다. 
+    //새로운 name의 필드값이  Kits의 document id에 존재할 때만 허용한다.
+    
+     match /Users/{user} {
+    		allow write :if exists(/databases/$(database)/documents/Kits/$(request.resource.data.name));
+    }
+```firestore
+//Users 컬렉션 내 특정 문서의 name 필드를 read 혹은 write하려고 한다. 
+//write하고자 하는 문서의 birth 필드값이 Kits의 document id로 존재할 때 허용한다. 
+
+match /Users/{user} {
+			allow read, write :if exists(/databases/$(database)/documents/Kits/$(resource.data.birth));
+    }
+```
+
+*request.resource.data는 사용자가 데이터베이스에 write하기를 시도하는 데이터임으로 read에는 적용할 수 없다. 반면 resource.data는 현재 데이터베이스에 존재하는 데이터임으로 read에 적용할 수 있다.
+
+
+
+<u>get 예시</u> 
+
+```firestore
+//request.auth.uid인 문서의 admin 필드가 true인가    
 if get(/databases/$(database)/documents/users/$(request.auth.uid)).data.admin == true
 ```
 
-> $(database) :  Cloud Firestore Security Rules 와일드 카드로 사용할 수 있는 데이터베이스 인스턴스를 정의하는 매개변수 
->
-> *match /databases/**{database}**/documents*
-
-​		
-
--map 형태의 필드값을 가져올 때
-
 ```firestore
+//map 형태의 필드값을 가져올 때
 // (roles / request.auth.uid / role / isadmin : true) 일때 승인
 
 match /posts/{docId} {    
@@ -360,10 +406,19 @@ function hasRole(userRole) {
 ```
 
 ```firestore
+//map 형태의 필드값을 가져올 때
 //(restaurants/restaurantID/ private_data (sub collection) / private / roles / request.auth.uid == editor or owner ) 일 때 승인
 
 if get(/databases/$(database)/documents/restaurants/$(restaurantID)/private_data/private).data.roles[request.auth.uid] == ["editor" ,"owner"]
 ```
+
+> $(database) :  Cloud Firestore Security Rules 와일드 카드로 사용할 수 있는 데이터베이스 인스턴스를 정의하는 매개변수 
+>
+> *match /databases/**{database}**/documents*
+
+
+
+
 
 
 
