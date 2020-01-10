@@ -73,6 +73,7 @@ match /databases/{database}/documents
 
 
 
+
 #### 1) 규칙을 적용할 문서를 지정한다.
 
 
@@ -602,9 +603,140 @@ Firestore.instance.collection("stories").getDocuments()
 
 #### HEM
 
-- 보안규칙이 필요한 항목 
-  - 데이터 접근할 사용자에 대한 보안규칙
-  - 문서 엑세스를 위한 보안규칙 
+- **보안규칙이 필요한 항목** 
+  
+  - **데이터 접근할 사용자에 대한 보안규칙**
+  
+  
+  
+  < phone collection (추가필요) >
+  
+  [read] 
+  
+  로그인 전 휴대폰 번호 읽기 
+  
+  ​       -아무나 다 가능 
+  
+  
+  
+  < Users collection >
+  
+  [read] 
+  
+  로그인 후 본인과 본인자녀의 정보만 읽기  
+  
+  사진 삭제 시 family fid가 같은 데이터 가져오기  
+  
+         - 현재 사용자의 인증된 번호와 Users collection에 저장된 번호가 같은 데이터만 읽기 가능 
+         - 로그인이 되어있을 때 (uid와 phone 정보가 존재할 때 )
+  
+  [create] 
+  
+  회원가입 로그인 인증 후 Users collection에 정보 추가할 때 
+  
+  Users collection에 자녀 정보 추가할 때
+  
+  - 로그인이 되어있을 때 (uid와 phone 정보가 존재할 때 )
+  - 현재 사용자의 인증된 번호와 추가하고자 하는 문서의 phone field 정보가 같을 때 
+  
+  - Users collection시 field 타입이 맞을 경우만 엑세스 허용 
+  
+  [update] 
+  
+  휴대폰 번호 업데이트 
+  
+  프로필사진 업데이트 
+  
+   stage flag , fcmtoken 업데이트 (?)
+  
+  - 로그인이 되어있을 때 (uid와 phone 정보가 존재할 때 )
+  
+  - phone 필드는 string type이며 10자 혹은 11자만 가능
+  - name , fid, regdttm, uid필드 변경되지 않도록 
+  
+  [delete]
+  
+  본인 탈퇴
+  
+  자녀 정보 삭제 
+  
+  - 로그인이 되어있을 때 (uid와 phone 정보가 존재할 때 )
+  - 현재 사용자의 인증된 번호와 Users collection에 저장된 번호가 같은 데이터만 삭제 가능
+  
+  
+  
+  
+  
+  < Kits collection >
+  
+  [read] 
+  
+  본인 kit 정보만 읽기 
+  
+  - 로그인이 되어있을 때 (uid와 phone 정보가 존재할 때 )
+  
+  - kit의 uid 필드가 users의 document id로 존재할 때  
+  
+  [create]
+  
+  키트 추가 
+  
+  - 로그인이 되어있을 때 (uid와 phone 정보가 존재할 때 )
+  
+  
+  
+  	-  valid kit 컬렉션 문서 id에 요청하는 kit name이 존재할 때 (kit 추가)
+  
+  		- 요청하는 kit name이 데이터베이스에 저장되어 있는 kit uid에 존재하지 않을 때  
+  
+  [update]
+  
+  키트 정보 업데이트 
+  
+  - 로그인이 되어있을 때 (uid와 phone 정보가 존재할 때 )
+  
+  
+  
+  - name , kid , regdttm 변화 되지 않도록   
+  
+  [delete]
+  
+  - 로그인이 되어있을 때 (uid와 phone 정보가 존재할 때 )
+  
+  
+  
+  < Results collection >
+  
+  [read] 
+  
+  본인 result 정보만 읽기 
+  
+  - 로그인이 되어있을 때 (uid와 phone 정보가 존재할 때 )
+  
+  - results의 id 정보가 kits의 document id로 존재할 때		
+  
+  [write]
+  
+  - 불가능
+  
+  
+  
+  < valid kits >
+  
+  [read]
+  
+  로그인 되있는 사람
+  
+  [create, update]
+  
+  불가능
+  
+  [delete]
+  
+  로그인 되있는 사람
+
+​		
+
 - 적용한 보안규칙 
 
 ```firestore
