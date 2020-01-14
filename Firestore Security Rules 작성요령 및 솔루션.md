@@ -74,6 +74,7 @@ match /databases/{database}/documents
 
 
 
+
 #### 1) 규칙을 적용할 문서를 지정한다.
 
 
@@ -591,7 +592,221 @@ Firestore.instance.collection("stories").getDocuments()
 
   - 문서 엑세스를 위한 보안규칙 
 
-  
+
+< User collection >
+
+_mapLoggedInToState()
+
+_mapEmailDuplicationChangedToState() 이메일 중복확인 
+
+
+
+[Read] [create] [update]
+
+- 로그인 인증 전에 User collection 데이터가 필요하다면 모두 접근 
+
+- 그렇지 않다면 로그인 인증이 된 사용자만 가능 (uid 존재)
+
+[delete] 
+
+- 불가능 (탈퇴가능 여부에 따름)
+
+
+
+< facility collection>
+
+-홈화면에서 mapPageLoadedToState()
+
+-facility setting bloc에서 _mapPageLoadedToState()
+
+-account  삭제 시 정보 불러옴
+
+-facility 정보 추가
+
+-실시간 'skyNow'    'tempNow'    'humidity'  업데이트 
+
+
+
+[Read]
+
+- 로그인 인증이 된 사용자만 가능 (uid 존재)
+
+- 현재 사용자의 uid가 facility의 uid 필드에 존재할 때
+
+[Write]
+
+- 로그인 인증이 된 사용자만 가능 (uid 존재)
+
+- 현재 사용자의 uid가 요청하는 facility의 uid로 존재할 때 
+
+
+
+< Account collection> 
+
+그래프 그릴 때 (fid가 같고 주어진 기간 내에 있는 정보 쿼리)
+
+account bloc의 _mapPageLoadedToState (주어진 fid가 같고 count와 date에 따라 정렬 count가 0보다 크고 3개씩)
+
+getDailyAccount (주어진 날짜와 fid가 같은 데이터)
+
+_mapAllDailyAcntLoadedToState (fid가 같고 count가 0보다 클 때 )
+
+account 삭제 (주어진 fid가 같은 정보)
+
+
+
+[Read]
+
+- 로그인 인증이 된 사용자만 가능 (uid 존재)
+
+- 나의 uid가 기존 문서의 field 에 존재할 때 
+- 기존문서의 fid가 facility의 document id로 존재할 때
+
+- 문서의 count필드가 0보다 크거나 같을 때 
+
+[Write] 
+
+- 로그인 인증이 된 사용자만 가능 (uid 존재)
+
+- 요청하는문서의  uid가 User의 document id로 존재할 때  
+- 요청하는 문서의 uid가 나의 uid와 같을 때 
+
+- 요청하는 문서의 fid가 facility의 document id로 존재할 때
+
+
+
+< Categories >
+작물 정보 추가할 때 식물 이름 검색 
+
+[Read] 
+
+- 로그인 인증이 된 사용자만 가능 (uid 존재)
+
+- 해당 유저의 uid가 User collection에 존재할 때
+
+[write] 
+
+- 불가능
+
+
+
+< journal collection >
+[Read] 
+
+- 로그인 인증이 된 사용자만 가능 (uid 존재)
+
+- fid가 facility의 document id로 존재할 때 
+
+[Write]
+
+- 로그인 인증이 된 사용자만 가능 (uid 존재)
+
+- 요청하는 문서의 fid가 facility에 존재할 때 
+
+
+
+
+
+ < keyword collection>
+
+[Read]
+
+- 로그인 인증이 된 사용자만 가능 (uid 존재)
+
+- fid가 facility의 document id로 존재할 때 
+
+[Write]
+
+- 로그인 인증이 된 사용자만 가능 (uid 존재)
+
+- 요청하는 문서의 fid가 facility에 존재할 때 
+
+ 
+
+< MonthlyAccount collection>
+
+< WeeklyAccount collection>
+
+< YearlyAccount collection >
+
+[Read]
+
+- 로그인 인증이 된 사용자만 가능 (uid 존재)
+
+- fid가 facility의 document id로 존재할 때 
+
+- 기존 문서의 uid들이 Users collection의 document id 로 존재할 때
+
+[Write]
+
+- 로그인 인증이 된 사용자만 가능 (uid 존재)
+- fid가 facility의 document id로 존재할 때 
+
+- 요청하는 문서필드의 uid가 Users collection의 document id 로 존재할 때
+- 요청하는 문서필드의 uid가 나의 uid와 같을 때  
+
+
+
+< Report collection>
+
+< ReportFavorite collection>
+
+[Read]
+
+- 로그인 인증이 된 사용자만 가능 (uid 존재)
+
+- fid가 facility의 document id로 존재할 때 
+- content가 null 아닐 때 
+- writer가 SYN 데이터팀인 정보만 불러오기 
+
+[Write]
+
+- 로그인 인증이 된 사용자만 가능 (uid 존재)
+
+- fid가 facility의 document id로 존재할 때 
+
+- content가 null 아닐 때 
+
+
+
+< picture collection>
+
+[Read]
+
+- 로그인 인증이 된 사용자만 가능 (uid 존재)
+
+- fid가 facility의 document id로 존재할 때 
+
+[Write]
+
+- 로그인 인증이 된 사용자만 가능 (uid 존재)
+
+- fid가 facility의 document id로 존재할 때 
+
+- 요청하는 문서의 path 필드가 null이 아닐 때 
+
+
+
+< tag collection> 
+
+[Read] 
+
+- 로그인 인증이 된 사용자만 가능 (uid 존재)
+
+- tag의 fid가 facility의 uid로 존재할 때
+- 현재 요청하는 tag의 tag가 null이 아닐 때      
+
+[Write]
+
+- 로그인 인증이 된 사용자만 가능 (uid 존재)
+
+- 현재 요청하는 tag의 fid가 facility의 uid로 존재할 때
+
+- 현재 요청하는 tag의 tag가 null이 아닐 때      
+
+**중복된 보안규칙 항목들이 많으니 함수사용
+
+
 
 - 적용한 보안규칙 
 
@@ -603,9 +818,10 @@ Firestore.instance.collection("stories").getDocuments()
 
 #### HEM
 
-- **보안규칙이 필요한 항목** 
+- **보안규칙이 필요한 항목**  
   
   - **데이터 접근할 사용자에 대한 보안규칙**
+  - **문서 엑세스를 위한 보안규칙 **
   
   
   
@@ -627,8 +843,8 @@ Firestore.instance.collection("stories").getDocuments()
   
   사진 삭제 시 family fid가 같은 데이터 가져오기  
   
-         - 현재 사용자의 인증된 번호와 Users collection에 저장된 번호가 같은 데이터만 읽기 가능 
-         - 로그인이 되어있을 때 (uid와 phone 정보가 존재할 때 )
+    - 현재 사용자의 인증된 번호와 Users collection에 저장된 번호가 같은 데이터만 읽기 가능 
+     - 로그인이 되어있을 때 (uid와 phone 정보가 존재할 때 )
   
   [create] 
   
@@ -682,12 +898,8 @@ Firestore.instance.collection("stories").getDocuments()
   키트 추가 
   
   - 로그인이 되어있을 때 (uid와 phone 정보가 존재할 때 )
-  
-  
-  
-  	-  valid kit 컬렉션 문서 id에 요청하는 kit name이 존재할 때 (kit 추가)
-  
-  		- 요청하는 kit name이 데이터베이스에 저장되어 있는 kit uid에 존재하지 않을 때  
+  - valid kit 컬렉션 문서 id에 요청하는 kit name이 존재할 때 (kit 추가)
+  - 요청하는 kit name이 데이터베이스에 저장되어 있는 kit uid에 존재하지 않을 때  
   
   [update]
   
