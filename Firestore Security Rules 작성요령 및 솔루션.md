@@ -22,6 +22,8 @@
 
 
 
+
+
 ### 1. 보안규칙 버전 
 
 ```firestore
@@ -47,7 +49,12 @@ match /databases/{database}/documents
 
 
 
+```
+service firebase.storage {  
+match /b/{bucket}/o 
+```
 
+- cloud.storage 에 대해 규칙을 적용한다고 선언한다.
 
 
 
@@ -57,17 +64,30 @@ match /databases/{database}/documents
 
 ###### 기본구조
 
+
+
+- cloud.firestore 
+
     service cloud.firestore {
     
       match /databases/{database}/documents {
           match /stories/{storyid} {
-          allow write: if request.auth.uid == resource.data.author;
+          allow read, write: if request.auth != null;    
       	  }
     	}
     } 
 
-  
+- cloud.storage 
 
+```
+service firebase.storage {  
+	match /b/{bucket}/o {    
+		match /images/{imageId} {      
+		allow read, write: if request.auth != null;    
+		}  
+	}
+}
+```
 
 
 
@@ -78,6 +98,8 @@ match /databases/{database}/documents
 #### 1) 규칙을 적용할 문서를 지정한다.
 
 
+
+[cloud firestore]
 
 - cities collection 내의 모든 문서에 대해 보안규칙 적용 (하위 컬렉션은 적용되지 않는다.)
 
@@ -104,6 +126,56 @@ match /cities/{document=**}
 
 
 -{ } 내의 이름은 컬렉션 이름과 다르게 임의로 설정하면 된다. 
+
+
+
+[cloud storage]
+
+- 모든 폴더에 대한 보안규칙 적용 
+
+```firestore
+match /{allPaths=**} {
+```
+
+
+
+- profile_imgs 폴더 내 모든 하위 범주에 대해 보안규칙 적용
+
+```firestore
+match /profile_imgs/{allPaths=**} {
+```
+
+
+
+- profile_imgs의 모든 폴더들에 대한 보안규칙 적용 
+
+```firestore
+match /profile_imgs/{profile_img}{
+```
+
+
+
+- profile_imgs의 모든 폴더의 하위 파일들에 대한 보안규칙 적용 
+
+```firestore
+match /profile_imgs/{profile_img}/{filename}{
+```
+
+
+
+- profile_imgs/2s6xdCuygpMv0ralWTnxbRZcYo73 폴더에 대한 보안규칙 적용
+
+```firestore
+match /profile_imgs/2s6xdCuygpMv0ralWTnxbRZcYo73 {
+```
+
+
+
+- profile_imgs/2s6xdCuygpMv0ralWTnxbRZcYo73/3409.jpg 폴더에 대한 보안규칙 적용
+
+```firestore
+match /profile_imgs/2s6xdCuygpMv0ralWTnxbRZcYo73/3409.jpg{
+```
 
 
 
@@ -170,6 +242,8 @@ allow delete: if <condition>;
 #### 	b. 보안 조건 정의
 
 
+
+**cloud firestore**
 
 ##### ==[ 데이터에 접근할 사용자에 대한 보안조건 ]==
 
@@ -535,9 +609,7 @@ service cloud.firestore {
     } 
 ```
 
-```firestore
 
-```
 
 
 
@@ -573,6 +645,43 @@ Firestore.instance.collection("stories").getDocuments()
 -이메일 인증서비스를 사용하지 않을 때 이메일 관련 조건을 추가하면 오류가 생긴다.
 
 -휴대폰 인증서비스에 대한 보안규칙 사용 시 Authentication에 저장된 형태인  phone_number == '821045241423' 형태만 허용가능하다.  '01045241423' 형태는 같지 않다고 인식하니 유의하자.
+
+
+
+**cloud storage**
+
+- 사용자 인증은 cloud firestore와 같다. 
+
+- 문서 엑세스에 관한 추가 정보는 문서 하단의 공식문서를 참조하자 
+
+```
+//파일의 사이즈 
+
+if request.resource.size < 5 * 1024 * 1024
+```
+
+```
+//파일의 타입 
+
+if request.resource.contentType.matches('image/.*') 
+	&& request.resource.contentType == resource.contentType;
+```
+
+```
+ //file name에 대한 보안규칙
+  
+ match /{imageId} {       
+ allow write: imageId == "profilePhoto.png" && imageId.size() < 32     
+ }   
+```
+
+
+
+**과금 정책 **
+
+- 규칙 평가는 요청별로 한 번만 요금이 부과되기 때문에 문서를 한 번에 하나씩 읽는 것보다 한 번에 여러 문서를 읽는 편이 비용이 적게 든다.
+- 요청한 규칙이 문서를 여러 번 참조하더라도 읽기 요금은 종속 문서당 1회만 청구된다.
+- 하단의 공식문서를 참조
 
 
 
@@ -967,4 +1076,30 @@ account 삭제 (주어진 fid가 같은 정보)
 ```firestore
 
 ```
+
+
+
+
+
+
+
+> **Firestore  API 문서**
+>
+> https://firebase.google.com/docs/reference/rules/rules.Boolean
+>
+> **Firestore 공식 보안규칙문서**
+>
+> https://firebase.google.com/docs/firestore/security/get-started
+>
+> **Firestore 공식 과금정책 문서  (보안규칙)**
+>
+> https://firebase.google.com/docs/firestore/pricing
+>
+> **cloud storage 공식 보안규칙 문서** 
+>
+> https://firebase.google.com/docs/storage/security/secure-files?hl=ko
+
+
+
+
 
