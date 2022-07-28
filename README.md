@@ -1,2 +1,2 @@
 # Firebase-Security-Study
-Firebase Security Study &amp; Solution document
+Firebase Security 공부 내용 정리
