@@ -1,2 +1,2 @@
 # Firebase-Security-Study
-Firebase Security 공부 내용 정리
+파이어베이스 보안에 대해 공부하고 정리했습니다.
